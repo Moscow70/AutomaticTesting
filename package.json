@@ -1,0 +1,14 @@
+{
+    "name": "node-env",
+    "version": "1.0.0",
+    "description": "",
+    "main": "test.js",
+
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+
+        "dev": "export NODE_ENV = localhost && node ./index.js"
+    },
+    "author":"",
+    "license":"ISC"
+}
