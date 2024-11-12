@@ -1,0 +1,6 @@
+Engineering-Code-Analysis/
+/.env
+/project/.env
+/project/__pycache__/
+/langgraph_project/.env
+/__pycache__/
