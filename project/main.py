@@ -5,6 +5,7 @@ import Question_answering
 import Testcases_generator
 import Code_generating
 import Running_codes
+import Image_extraction
 
 
 
@@ -21,10 +22,21 @@ if __name__ =='__main__':
 
     database_directory = "D:/workspace/database/documents"
 
+    image_directory = "D:/workspace/images"
+
     print("Your current document is :" + document_directory)
     print("Your current database is :"+ database_directory)
 
     print("===Start Document Processing===")
+
+    print("Do you want to extract images from files? (y/n)")
+    user_input = input()
+
+    if user_input == 'y':
+        print("===Start Extracting Images!===")
+        image_extraction_bot = Image_extraction.image_extraction(document_directory, image_directory)
+        image_extraction_bot.extracting_image()
+
     summary_directory = 'D:/workspace/output/summary.txt'
     database_name = "document"
     embedding_part = Document_embedding.document_embedding(document_directory, database_directory, summary_directory)

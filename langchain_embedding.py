@@ -36,7 +36,7 @@ embedding = OpenAIEmbeddings()
 
 from langchain_community.vectorstores import Chroma
 
-persist_directory = 'D:/vscodeproject/python/chroma'
+persist_directory = 'D:/workspace/chroma'
 
 
 vectordb = Chroma.from_documents(
