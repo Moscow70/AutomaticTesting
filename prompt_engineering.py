@@ -1,25 +1,18 @@
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import os
 import json
 import httpx
 from dotenv import load_dotenv
 
 
-class book(BaseModel):
+class Book(BaseModel):
     name : str
     author : str
-    data : str
 
-class Address(BaseModel):
-    state : str
-    city : str
-    street : str
-
-class books(BaseModel) :
+class Books(BaseModel) :
     publiser :str
-    address : Address
-    books : list[book]
+    books : list[Book]
 
 
 # 通过key和url调用OpenAI方法创建一个对象
@@ -34,77 +27,113 @@ client = OpenAI(
     base_url = base_url
 )
 
-MODEL = "gpt-3.5-turbo"
-
-prompt = '请你站在一个律师的角度分析用户的提问，并给出专业的回答，以下是用户的提问：'
-
-def get_case(question):
-
-    # 调用chat.completions.create方法来生成文本。传递的参数包括模型名称和消息列表
-    chat_completions = client.chat.completions.create(
-
-        # mseeage[...]是消息列表
-        messages = [
-
-            # 系统消息，告诉模型所扮演的角色
-            {"role": "system", "content": prompt},
-
-            # 用户消息
-            {"role": "user", "content": question}
-        ],
-        model=MODEL,
-    )
-    # 从生成的结果中获取第一个选择消息的内容
-    output = chat_completions.choices[0].message.content
-    return output
-
-# 单轮对话
-# user_input = input ("请咨询法律问题：")
-# answer = get_case(user_input)
-# print(f"\n咨询结果：{answer}")
-
-
-# 多轮对话
-# print("您好，我是一个AI法律咨询机器人，现在开始您的提问吧，您可以通过输入【exit】来结束对话：")
-# while True:
-#     user_input = input("Q:")
-#     if user_input.lower() == "exit" :
-#         print("Bye")
-#         break
-#     answer = get_case(user_input + '\n')
-#     prompt = prompt + 'A:' + answer + '\n'
-#     print(f"A:{answer}")
-
-
-
-
-def format_output(client, question, response_format):
-    chat_completion = client.chat.completions.create(
-        messages= [
-            {"role": "system", "content": "你是一个图书管理员"},
-            {"role": "user", "content": question}
-        ],
-        model = MODEL,
-    )
-
-    messages = [
-        # {"role": "system", "content": "你是一个图书管理员"},
-        {"role": "user", "content": question}
+output_format = """
+```json
+{
+    "publisher": "string",
+    "books": [
+        {"name": "string","author": "string"},
+        {"name": "string","author": "string"}
     ]
+}
+"""
 
-    completions = client.beta.chat.completions.parse(
-        model = MODEL,
-        messages= messages,
-        response_format= response_format
+ai_answer_prompt_1 = """
+{
+    "publisher": "清华大学出版社", 
+    "books": [
+        {
+            "name": "《人工智能：现代方法》",
+            "author": "斯图尔特·罗素、彼得·诺维格"
+        }, 
+        {
+            "name": "《深度学习》", 
+            "author": "伊恩·古德费洛、约书亚·本吉奥"
+        }
+    ]
+    "publisher": "MIT Press",
+    "books": [
+        {
+            "name": "《机器学习》",
+            "author": "凯文·墨菲"
+        }
+    ]
+}
+"""
+
+ai_answer_prompt_2 = """
+{
+
+    "publisher": "清华大学出版社",
+    "books": [
+        {
+            "name": "《深度学习》",
+            "author": "伊恩·古德费洛、约书亚·本吉奥"
+        }
+    ]
+}
+"""
+
+
+prompt_template = """
+```markdown
+**system:**
+- 你是一个图书管理员，负责管理图书的信息。
+- 你的回答必须以JSON格式提供，包含`publisher`和`books`两个字段。
+- `books`字段必须是一个数组，每个元素是一个包含`name`和`author`字段的对象。
+- 不要编造内容，只回答书籍相关问题。
+
+**user:**
+- 目标：负责接收用户的需求，并根据需求提供书籍的相关信息。
+- 输出格式：按照JSON格式输出，输出的格式需要包含以下几个字段：
+  - `publisher`：字符串类型，表示书籍的出版社名称。
+  - `books`：数组类型，表示书籍的详细信息。每个元素是一个对象，包含以下字段：
+    - `name`：字符串类型，表示书籍的名称。
+    - `author`：字符串类型，表示书籍的作者。
+- 以下是输出的格式，请严格按照此格式输出：
+{output_format}
+
+**示例：**
+- 输入：帮我找三本人工智能相关书籍。
+- AI：{ai_answer_prompt_1}
+
+ - 输入：告诉我关于《深度学习》的书籍信息。
+- AI：{ai_answer_prompt_2}
+
+**对话历史**：{dialog_history}
+
+
+用户问题：{user_question}
+"""
+
+def get_books(question, dialog_history = ""):
+    prompt = prompt_template.format(
+        output_format = output_format,
+        ai_answer_prompt_1 = ai_answer_prompt_1,
+        ai_answer_prompt_2 = ai_answer_prompt_2,
+        user_question = question,
+        dialog_history = dialog_history
+        )
+    chat_completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages= [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": question}
+
+        ]
     )
-    print(chat_completion.choices[0].message.content)
-    msg = None
-    message = completions.choices[0].message
-    if message.parsed:
-        msg = message.content
-    else:
-        msg = message.refusal
-    return msg
+    response_content = chat_completion.choices[0].message.content
+    print("AI的回答：")
+    print(response_content)
 
-mes = format_output(client, "给我三本书的信息", books)
-print(mes)
+dialog_history = ""
+
+while True:
+    user_question = input("请输入你的问题，输入exit结束对话：")
+
+    if user_question.lower() == "exit":
+        print("对话结束")
+        break
+    
+    response = get_books(user_question, dialog_history)
+    dialog_history = dialog_history + f"- 用户：{user_question}\n- AI：{response}\n"
