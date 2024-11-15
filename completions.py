@@ -15,7 +15,8 @@ client = OpenAI(
     base_url = base_url
 )
 
-MODEL = "ERNIE-Lite-8K"
+# MODEL = "ERNIE-Lite-8K"
+MODEL = "gpt-3.5-turbo"
 
 prompt = '请你站在一个律师的角度分析用户的提问，并给出专业的回答，以下是用户的提问：'
 

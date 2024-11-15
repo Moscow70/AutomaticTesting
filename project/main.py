@@ -30,7 +30,7 @@ if __name__ =='__main__':
     print("===Start Document Processing===")
 
     print("Do you want to extract images from files? (y/n)")
-    user_input = input()
+    user_input = input().lower()
 
     if user_input == 'y':
         print("===Start Extracting Images!===")
@@ -54,20 +54,23 @@ if __name__ =='__main__':
         问题: {question}
         有用的回答:"""  
 
-        question_for_summary = "根据本文档设计测试需求，并且要分点回答，每一点之间要分行。"
+        question_for_summary = "根据本文档设计接口测试需求，不需要设计别的测试需求，并且要分点回答，每一点之间要分行。"
 
-        summary_chatbot = Question_answering.question_answering(vectordb, summary_directory)
+        if os.path.isfile(summary_directory):
+            print("Summary file exists!Skip the question answering part!")
+        else:
+            summary_chatbot = Question_answering.question_answering(vectordb, summary_directory)
 
-        print("===Start Question Answering===")
-        print("Your question is:"+ question_for_summary)
-        summary = summary_chatbot.question_answering(template_for_summary, question_for_summary)
+            print("===Start Question Answering===")
+            print("Your question is:"+ question_for_summary)
+            summary = summary_chatbot.question_answering(template_for_summary, question_for_summary)
 
-        if summary != None:       
-            with open(summary_directory, 'w') as summary_content:
-                summary_content.write(summary)
+            if summary != None:       
+                with open(summary_directory, 'w') as summary_content:
+                    summary_content.write(summary)
 
-            print("The summary document has been generated!")
-        # print(summary)
+                print("The summary document has been generated!")
+            # print(summary)
 
         template_for_textcases_generation = """
         按照以下示例，生成对应的测试用例：\
@@ -77,7 +80,7 @@ if __name__ =='__main__':
         前提条件: 用户已注册账户 \
         测试步骤: \
             1.用户输入正确的用户名和密码。 \
-            2.点击登录按钮。 预期结果: 系统显示欢迎页面，并显示用户信息。
+            2.点击登录按钮。
         在测试步骤结束之后加上以下内容作为测试用例的结束： \
         ========
         {context}
@@ -101,47 +104,53 @@ if __name__ =='__main__':
 
         print(f"Summary Database size : {(summary_vectordb._collection.count())}")
 
+        if os.path.isfile(testcases_directory):
+            print("Testcases file exists!Skip the testcases generating part!")
+        else:
+            testcasesgenerator_bot = Testcases_generator.testcases_generator(summary_vectordb, testcases_directory)
 
+            print("===Start Generating Testcases===")
 
-        testcasesgenerator_bot = Testcases_generator.testcases_generator(summary_vectordb, testcases_directory)
+            testcases = testcasesgenerator_bot.generating_testcases(template_for_textcases_generation, quesion_for_textcases_generation)
 
-        print("===Start Generating Testcases===")
+            if testcases!= None:
+                with open(testcases_directory, 'w') as testcases_content:
+                    testcases_content.write(testcases)
 
-        testcases = testcasesgenerator_bot.generating_testcases(template_for_textcases_generation, quesion_for_textcases_generation)
-
-        if testcases!= None:
-            with open(testcases_directory, 'w') as testcases_content:
-                testcases_content.write(testcases)
-
-            print("The testcases has been generated!")
+                print("The testcases has been generated!")
 
         template_for_codes_generation = """
         以数据库中被========分隔符分割的部分为单元，\
-        每个单元生成一个测试方法，\
-        最终按照以下模板，将每个方法填入代码中，并生成main函数部分：\
-        import requests
-        import json
+        每个单元生成一个测试方法，最终生成完整的测试代码\
+        以下是一个例子，代码按照这种格式生成，其中，username和password可以自己生成  \
+        
+        import requests \
+        import json \
 
-        login_url = 'http://localhost:5000/login'
+        BASE_URL = "http://127.0.0.1:5000/login" \
 
-        # 以下是一个例子，代码按照这种格式生成
-        # 成功的登录测试
-        def test_successful_login():
-
-
-        if __name__ == '__main__':
-            test_successful_login()
+        #成功的登录测试 \
+        def test_valid_login(): \
+            
+        
+        if __name__ == "__main__": \
+            test_valid_login() \
+            
+        注意： \
+        1. 每个单元的测试方法名称要与单元中被========分隔符分割的部分保持一致。 \
+        2. 每个单元的测试方法中，要按照单元中被========分隔符分割的部分的内容，生成对应的测试用例。 
 
         {context}
-        问题：{question}
-        有用的回答：
+        问题: {question}
         """
-        quesion_for_codes_generation = "根据读取的测试用例，按照模板生成代码。"
 
-        print("===Start Generating Codes!===")
+        quesion_for_codes_generation = "根据读取的测试用例，按照模板生成代码。"
 
         testcases_database_directory = "D:/workspace/database/testcases"
         codes_directory = 'D:/workspace/output/codes.txt'
+
+
+        print("===Start Testcases Processing!===")
 
         print("Your current testcases is :" + testcases_directory)
         print("Your current database is :"+ testcases_database_directory)
@@ -152,16 +161,21 @@ if __name__ =='__main__':
 
         print(f"Testcases Database size : {(summary_vectordb._collection.count())}")
 
-        codegenerator_bot = Code_generating.codes_generator(testcases_vectordb, codes_directory)
+        if os.path.isfile(codes_directory):
+            print("Codes file exists!Skip the code generating part!")
+        else:
 
-        codes = codegenerator_bot.generating_codes(template_for_codes_generation, quesion_for_codes_generation)
+            print("Start Generating Codes!")
+            codegenerator_bot = Code_generating.codes_generator(testcases_vectordb, codes_directory)
 
-        if codes != None:
-            with open(codes_directory, 'w') as codes_content:
-                codes_content.write(codes)
+            codes = codegenerator_bot.generating_codes(template_for_codes_generation, quesion_for_codes_generation)
 
-            print("The codes has been generated!")
-        
+            if codes != None:
+                with open(codes_directory, 'w') as codes_content:
+                    codes_content.write(codes)
+
+                print("The codes has been generated!")
+            
         print("===Start Running Codes!===")
 
         running_codes_bot = Running_codes.running_codes(codes_directory)

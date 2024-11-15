@@ -65,7 +65,7 @@ class document_embedding:
             user_input = input()
             if user_input.lower() == 'y':
                 shutil.rmtree(self.dabase_persist_directory)
-                if (os.path.isdir(self.result_directory)):
+                if (os.path.isfile(self.result_directory)):
                     os.remove(self.result_directory)
                 print("Database and result files has been deleted!")
 
