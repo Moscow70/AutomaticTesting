@@ -28,7 +28,6 @@ client = OpenAI(
 )
 
 output_format = """
-```json
 {
     "publisher": "string",
     "books": [
@@ -51,13 +50,6 @@ ai_answer_prompt_1 = """
             "author": "伊恩·古德费洛、约书亚·本吉奥"
         }
     ]
-    "publisher": "MIT Press",
-    "books": [
-        {
-            "name": "《机器学习》",
-            "author": "凯文·墨菲"
-        }
-    ]
 }
 """
 
@@ -69,6 +61,18 @@ ai_answer_prompt_2 = """
         {
             "name": "《深度学习》",
             "author": "伊恩·古德费洛、约书亚·本吉奥"
+        }
+    ]
+}
+"""
+
+ai_answer_prompt_3 = """
+{
+    "publisher": "None
+    "books": [
+        {
+            "name": "None",
+            "author": "None"
         }
     ]
 }
@@ -94,11 +98,14 @@ prompt_template = """
 {output_format}
 
 **示例：**
-- 输入：帮我找三本人工智能相关书籍。
+- 输入：帮我找两本人工智能相关书籍。
 - AI：{ai_answer_prompt_1}
 
  - 输入：告诉我关于《深度学习》的书籍信息。
 - AI：{ai_answer_prompt_2}
+
+- 输入：帮我查找本周羽毛球比赛的相关信息。
+- AI：{ai_answer_prompt_3}
 
 **对话历史**：{dialog_history}
 

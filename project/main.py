@@ -11,7 +11,7 @@ import Image_extraction
 
 if __name__ =='__main__':
     
-    load_dotenv(dotenv_path=".env", override=True)
+    load_dotenv(dotenv_path="../.env", override=True)
 
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL")
